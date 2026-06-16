@@ -456,7 +456,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
 <!-- ===== 每周总结 ===== -->
 <div class="page" id="page-weekly">
   <div class="card">
-    <div class="card-title">本周总结</div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+    本周总结
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="exportData()">导出数据</button>
+      <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="copyWeeklyReport()">复制周报</button>
+    </div>
+  </div>
     <div id="weeklyContent">
       <div class="empty-state">
         <div class="empty-icon">&#128200;</div>
@@ -1013,10 +1019,153 @@ function renderWeekly(){
 
   content.innerHTML=html;
 }
-</script>
+// 生成周报文字
+function generateWeeklyReport(){
+  const logs=loadLogs();
+  if(logs.length===0)return '暂无打卡数据';
 
-<script>
-// Service Worker Registration
+  // 最近7天
+  const today=new Date();
+  const weekAgo=new Date(today);
+  weekAgo.setDate(weekAgo.getDate()-7);
+  const daysWithData=logs.filter(l=>{
+    const d=new Date(l.date);
+    return d>=weekAgo&&d<=today;
+  }).sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  if(daysWithData.length<3)return '本周打卡天数不足3天，暂无周报';
+
+  const weekStart=daysWithData[0].date;
+  const weekEnd=daysWithData[daysWithData.length-1].date;
+  const todayStr=today.toISOString().split('T')[0];
+
+  let report=`【小北的健康周报】${weekStart} ~ ${weekEnd}\n`;
+  report+=`生成时间：${todayStr}\n`;
+  report+=`打卡天数：${daysWithData.length}天\n`;
+  report+=`---\n`;
+
+  daysWithData.forEach((d,idx)=>{
+    const dateObj=new Date(d.date);
+    const dayName=['周日','周一','周二','周三','周四','周五','周六'][dateObj.getDay()];
+    report+=`\n【${d.date} ${dayName}】\n`;
+
+    // 饮食
+    if(d.allFood){
+      report+=`饮食：${d.allFood.replace(/\n/g,' | ')}\n`;
+    }
+    const carbMap={low:'低碳水日',mid:'中等',high:'偏高'};
+    if(d.choices&&d.choices.overallCarb)report+=`碳水：${carbMap[d.choices.overallCarb]||''}\n`;
+    const waterMap={4:'4杯以下',6:'5-6杯',8:'7-8杯',10:'8杯以上'};
+    if(d.choices&&d.choices.water)report+=`饮水：${waterMap[d.choices.water]||''}\n`;
+
+    // 睡眠
+    if(d.sleepTime||d.wakeTime){
+      let sleepLine='睡眠：';
+      if(d.sleepTime)sleepLine+=`${d.sleepTime}入睡`;
+      if(d.wakeTime)sleepLine+=` ${d.wakeTime}起床`;
+      const sleepQualityMap={good:'好',ok:'一般',bad:'差'};
+      if(d.choices&&d.choices.sleepQuality)sleepLine+=` 质量：${sleepQualityMap[d.choices.sleepQuality]||''}`;
+      if(d.choices&&d.choices.nightWake&&d.choices.nightWake!=='0')sleepLine+=` 夜醒${d.choices.nightWake}次`;
+      report+=sleepLine+'\n';
+    }
+
+    // 运动
+    if(d.choices&&d.choices.exercised==='yes'){
+      let exLine='运动：';
+      if(d.choices.exType)exLine+=`${d.choices.exType}`;
+      if(d.exDuration)exLine+=` ${d.exDuration}分钟`;
+      if(d.choices.exIntensity)exLine+=` ${d.choices.exIntensity}强度`;
+      report+=exLine+'\n';
+    }else if(d.choices&&d.choices.exercised==='rest'){
+      report+=`运动：休息日\n`;
+    }
+
+    // 身体与情绪
+    const moodMap={good:'好',ok:'平',low:'低落',irritable:'烦躁'};
+    if(d.choices&&d.choices.mood)report+=`情绪：${moodMap[d.choices.mood]||''}\n`;
+    const stressMap={low:'低',mid:'中',high:'高'};
+    if(d.choices&&d.choices.stress)report+=`压力：${stressMap[d.choices.stress]||''}\n`;
+    if(d.fastingGlu)report+=`空腹血糖：${d.fastingGlu} mmol/L\n`;
+    if(d.postGlu)report+=`餐后2h血糖：${d.postGlu} mmol/L\n`;
+    if(d.weight)report+=`体重：${d.weight} kg\n`;
+
+    // 一句话
+    if(d.quote)report+=`备注：${d.quote}\n`;
+  });
+
+  // 本周总结
+  const avgSleep=daysWithData.filter(d=>d.sleepTime&&d.wakeTime).reduce((acc,d)=>{
+    const [sh,smin]=d.sleepTime.split(':').map(Number);
+    const [wh,wmin]=d.wakeTime.split(':').map(Number);
+    let sleepMin=sh*60+smin;
+    let wakeMin=wh*60+wmin;
+    if(wakeMin<sleepMin)wakeMin+=24*60;
+    return acc+(wakeMin-sleepMin)/60;
+  },0)/daysWithData.filter(d=>d.sleepTime&&d.wakeTime).length||0;
+
+  const highCarbDays=daysWithData.filter(d=>d.choices&&d.choices.overallCarb==='high').length;
+  const exDays=daysWithData.filter(d=>d.choices&&d.choices.exercised==='yes').length;
+  const highStressDays=daysWithData.filter(d=>d.choices&&d.choices.stress==='high').length;
+
+  report+=`\n---\n【本周小结】\n`;
+  if(avgSleep)report+=`平均睡眠：${avgSleep.toFixed(1)}小时\n`;
+  report+=`碳水偏高天数：${highCarbDays}天\n`;
+  report+=`运动天数：${exDays}天\n`;
+  report+=`高压力天数：${highStressDays}天\n`;
+  report+=`\n请全能健康顾问给出本周分析和下周建议。\n`;
+
+  return report;
+}
+
+// 复制周报
+function copyWeeklyReport(){
+  const report=generateWeeklyReport();
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(report).then(()=>{
+      showToast('周报已复制到剪贴板，粘贴发给全能健康顾问即可');
+    }).catch(()=>{
+      fallbackCopy(report);
+    });
+  }else{
+    fallbackCopy(report);
+  }
+}
+
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.style.position='fixed';
+  ta.style.left='-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try{
+    document.execCommand('copy');
+    showToast('周报已复制，粘贴发给全能健康顾问即可');
+  }catch(e){
+    showToast('复制失败，请手动复制');
+  }
+  document.body.removeChild(ta);
+}
+
+// 导出数据
+function exportData(){
+  const logs=loadLogs();
+  const data={
+    version:'1.0',
+    exportDate:new Date().toISOString().split('T')[0],
+    totalDays:logs.length,
+    logs:logs
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`health-diary-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('数据文件已下载，可发送给全能健康顾问');
+}
+
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').then(()=>{
     console.log('SW registered');
