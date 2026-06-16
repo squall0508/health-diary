@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小北的健康日记</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3B6D11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="健康日记">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FAFAF8;--card:#FFFFFF;--primary:#3B6D11;--primary-light:#EAF3DE;
+  --accent:#EF9F27;--accent-light:#FAEEDA;--danger:#E24B4A;--danger-light:#FCEBEB;
+  --text:#2C2C2A;--text2:#5F5E5A;--text3:#888780;--border:#E8E7E2;
+  --radius:12px;--shadow:0 1px 3px rgba(0,0,0,0.06);
+  --coral:#D85A30;--coral-light:#FAECE7;--teal:#1D9E75;--teal-light:#E1F5EE;
+  --purple:#534AB7;--purple-light:#EEEDFE;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:14px;min-height:100vh}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-title{font-size:18px;font-weight:600;color:var(--primary)}
+.header-sub{font-size:12px;color:var(--text3)}
+.header-date{font-size:13px;color:var(--text2);font-weight:500}
+.nav{display:flex;gap:4px;padding:12px 20px;background:var(--bg)}
+.nav-btn{flex:1;padding:10px 8px;border:0.5px solid var(--border);border-radius:8px;background:var(--card);cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .2s;text-align:center}
+.nav-btn:hover{border-color:var(--primary);color:var(--primary)}
+.nav-btn.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary);font-weight:600}
+.page{display:none;padding:16px 20px 100px}
+.page.active{display:block}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.metric-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.metric{background:var(--bg);border-radius:8px;padding:12px;text-align:center}
+.metric-val{font-size:22px;font-weight:600;line-height:1.2}
+.metric-label{font-size:11px;color:var(--text3);margin-top:4px}
+.metric.green .metric-val{color:var(--primary)}
+.metric.amber .metric-val{color:var(--accent)}
+.metric.red .metric-val{color:var(--danger)}
+.metric.teal .metric-val{color:var(--teal)}
+.metric.purple .metric-val{color:var(--purple)}
+.metric.coral .metric-val{color:var(--coral)}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.tag-green{background:var(--primary-light);color:var(--primary)}
+.tag-amber{background:var(--accent-light);color:var(--accent)}
+.tag-red{background:var(--danger-light);color:var(--danger)}
+.tag-teal{background:var(--teal-light);color:var(--teal)}
+.tag-purple{background:var(--purple-light);color:var(--purple)}
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s}
+.btn-primary{background:var(--primary);color:white}
+.btn-primary:hover{opacity:.9}
+.btn-outline{background:transparent;border:0.5px solid var(--border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-block{width:100%;display:block}
+.wizard-steps{display:flex;gap:6px;margin-bottom:16px;align-items:center}
+.wizard-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .2s}
+.wizard-dot.active{background:var(--primary);transform:scale(1.3)}
+.wizard-dot.done{background:var(--primary-light)}
+.wizard-line{flex:1;height:2px;background:var(--border);border-radius:1px}
+.wizard-line.done{background:var(--primary-light)}
+.step{display:none}
+.step.active{display:block}
+.step-title{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.step-title .icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px;display:block}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;background:var(--card);color:var(--text);transition:border .2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary)}
+.form-textarea{resize:vertical;min-height:60px}
+.voice-wrap{position:relative}
+.voice-btn{position:absolute;right:10px;bottom:10px;width:36px;height:36px;border-radius:50%;border:none;background:var(--primary-light);color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
+.voice-btn:hover{background:var(--primary);color:white}
+.voice-btn.recording{background:var(--danger);color:white;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.voice-hint{font-size:11px;color:var(--text3);margin-top:4px;display:none}
+.voice-hint.show{display:block;color:var(--danger)}
+.form-row{display:flex;gap:10px}
+.form-row>*{flex:1}
+.choice-group{display:flex;gap:8px;flex-wrap:wrap}
+.choice-btn{padding:7px 14px;border:0.5px solid var(--border);border-radius:20px;background:var(--card);cursor:pointer;font-size:13px;color:var(--text2);transition:all .15s}
+.choice-btn:hover{border-color:var(--primary);color:var(--primary)}
+.choice-btn.selected{background:var(--primary-light);border-color:var(--primary);color:var(--primary);font-weight:500}
+.checkbox-group{display:flex;gap:8px;flex-wrap:wrap}
+.check-item{display:flex;align-items:center;gap:6px;padding:6px 12px;border:0.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .15s}
+.check-item:hover{border-color:var(--primary)}
+.check-item.checked{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+.check-item input{display:none}
+.check-box{width:16px;height:16px;border:0.5px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;flex-shrink:0}
+.check-item.checked .check-box{background:var(--primary);color:white;border-color:var(--primary)}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:20px}
+.progress-fill{height:100%;background:var(--primary);border-radius:2px;transition:width .3s}
+.step-nav{display:flex;gap:10px;margin-top:20px}
+.history-item{padding:12px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background .1s}
+.history-item:last-child{border-bottom:none}
+.history-item:hover{background:var(--bg);border-radius:8px;margin:0 -8px;padding:12px 8px}
+.history-date{font-size:13px;font-weight:500;color:var(--text)}
+.history-summary{font-size:12px;color:var(--text3);margin-top:4px}
+.history-tags{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.chart-bar-container{display:flex;align-items:flex-end;gap:6px;height:120px;padding:8px 0;border-bottom:1px solid var(--border)}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.chart-bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .3s}
+.chart-day{font-size:10px;color:var(--text3)}
+.chart-val{font-size:10px;font-weight:500;color:var(--text2)}
+.week-score{display:flex;align-items:center;gap:8px;padding:8px 0}
+.week-score-label{font-size:13px;color:var(--text2);flex:1}
+.week-score-stars{display:flex;gap:2px}
+.star{width:18px;height:18px;cursor:pointer;font-size:14px;color:var(--border);transition:color .15s}
+.star.filled{color:var(--accent)}
+.advice-box{background:var(--teal-light);border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;color:var(--teal);line-height:1.6}
+.advice-box strong{display:block;margin-bottom:4px;font-size:14px}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-state .empty-icon{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty-state p{font-size:14px;margin-bottom:16px}
+.save-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--primary);color:white;padding:10px 24px;border-radius:24px;font-size:14px;font-weight:500;transition:transform .3s;z-index:999}
+.save-toast.show{transform:translateX(-50%) translateY(0)}
+.detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.detail-overlay.show{display:flex}
+.detail-panel{background:var(--card);border-radius:var(--radius) var(--radius) 0 0;width:100%;max-width:600px;max-height:80vh;overflow-y:auto;padding:20px;animation:slideUp .3s}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.detail-close{text-align:right;margin-bottom:12px}
+.detail-close button{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)}
+.section-divider{height:1px;background:var(--border);margin:16px 0}
+@media(min-width:600px){
+  .metric-grid{grid-template-columns:repeat(3,1fr)}
+  .page{padding:20px 40px 100px;max-width:800px;margin:0 auto}
+}
+@media(min-width:900px){
+  .metric-grid{grid-template-columns:repeat(4,1fr)}
+  .page{max-width:1000px}
+}
+</style>
+</head>
+<body>
+
+<div class="save-toast" id="toast">保存成功</div>
+
+<div class="header">
+  <div>
+    <div class="header-title">小北的健康日记</div>
+    <div class="header-sub">by 全能健康顾问</div>
+  </div>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="switchPage('home')">主页</button>
+  <button class="nav-btn" onclick="switchPage('log')">打卡</button>
+  <button class="nav-btn" onclick="switchPage('history')">记录</button>
+  <button class="nav-btn" onclick="switchPage('weekly')">总结</button>
+</div>
+
+<!-- ===== 主页 ===== -->
+<div class="page active" id="page-home">
+  <div class="card">
+    <div class="card-title"><span style="background:var(--primary-light);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--primary)">今日</span> 健康概览</div>
+    <div class="metric-grid" id="homeMetrics">
+      <div class="metric green"><div class="metric-val" id="hm-sleep">--</div><div class="metric-label">睡眠时长</div></div>
+      <div class="metric teal"><div class="metric-val" id="hm-exercise">--</div><div class="metric-label">运动时长</div></div>
+      <div class="metric amber"><div class="metric-val" id="hm-mood">--</div><div class="metric-label">情绪状态</div></div>
+      <div class="metric purple"><div class="metric-val" id="hm-water">--</div><div class="metric-label">饮水量</div></div>
+    </div>
+  </div>
+  <div class="card" id="homeTodayLog" style="display:none">
+    <div class="card-title">今天的一句话说</div>
+    <div style="font-size:14px;color:var(--text2);font-style:italic" id="homeQuote"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">快速入口</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="switchPage('log')" style="flex:1">今日打卡</button>
+      <button class="btn btn-outline" onclick="switchPage('weekly')" style="flex:1">查看总结</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">健康优先级</div>
+    <div style="display:flex;gap:8px;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="tag tag-red">最高</span>
+        <span style="font-size:13px">血糖管理 — 糖化5.6%，守住正常线</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="tag tag-amber">中等</span>
+        <span style="font-size:13px">围绝经期调理 — 睡眠、情绪、骨密度</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="tag tag-green">日常</span>
+        <span style="font-size:13px">压力管理 — 应急工具包随时待命</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">每日3问</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text2)">
+      <div>1. 今天碳水选对了吗？</div>
+      <div>2. 今天餐后有运动吗？</div>
+      <div>3. 今天蔬菜吃够了吗？</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 打卡 ===== -->
+<div class="page" id="page-log">
+  <div class="progress-bar"><div class="progress-fill" id="logProgress" style="width:20%"></div></div>
+  <div class="wizard-steps" id="wizardSteps"></div>
+
+  <!-- Step 1: 饮食 -->
+  <div class="step active" id="step-0">
+    <div class="step-title">
+      <span class="icon" style="background:var(--accent-light);color:var(--accent)">&#127858;</span>
+      饮食记录
+    </div>
+    <div class="form-group">
+      <label class="form-label">今天吃了什么</label>
+      <div class="voice-wrap">
+        <textarea class="form-textarea" id="f-allFood" placeholder="一次性写下今天所有食物，比如：&#10;早餐：豆浆+鸡蛋+全麦面包&#10;午餐：轻食沙拉+鸡胸肉&#10;晚餐：蔬菜+鱼+少量杂粮饭&#10;加餐：一小把坚果" style="min-height:120px;padding-right:48px"></textarea>
+        <button class="voice-btn" id="voiceBtnFood" onclick="startVoice('f-allFood','voiceBtnFood')" title="语音输入">&#127908;</button>
+      </div>
+      <div class="voice-hint" id="voiceHintFood">正在听你说...</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">今天碳水整体水平</label>
+      <div class="choice-group" data-field="overallCarb">
+        <button class="choice-btn" data-val="low">低碳水日</button>
+        <button class="choice-btn" data-val="mid">中等</button>
+        <button class="choice-btn" data-val="high">偏高</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">饮水量（杯）</label>
+      <div class="choice-group" data-field="water">
+        <button class="choice-btn" data-val="4">4杯以下</button>
+        <button class="choice-btn" data-val="6">5-6杯</button>
+        <button class="choice-btn" data-val="8">7-8杯</button>
+        <button class="choice-btn" data-val="10">8杯以上</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">饮食自评</label>
+      <div class="choice-group" data-field="dietRating">
+        <button class="choice-btn" data-val="good">不错</button>
+        <button class="choice-btn" data-val="ok">一般</button>
+        <button class="choice-btn" data-val="bad">需改进</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: 睡眠 -->
+  <div class="step" id="step-1">
+    <div class="step-title">
+      <span class="icon" style="background:var(--purple-light);color:var(--purple)">&#128164;</span>
+      睡眠记录
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">入睡时间</label>
+        <input class="form-input" type="time" id="f-sleepTime">
+      </div>
+      <div class="form-group">
+        <label class="form-label">起床时间</label>
+        <input class="form-input" type="time" id="f-wakeTime">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">睡眠质量</label>
+      <div class="choice-group" data-field="sleepQuality">
+        <button class="choice-btn" data-val="good">好</button>
+        <button class="choice-btn" data-val="ok">一般</button>
+        <button class="choice-btn" data-val="bad">差</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">夜醒次数</label>
+      <div class="choice-group" data-field="nightWakes">
+        <button class="choice-btn" data-val="0">0次</button>
+        <button class="choice-btn" data-val="1">1次</button>
+        <button class="choice-btn" data-val="2">2次</button>
+        <button class="choice-btn" data-val="3">3次+</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">潮热/盗汗</label>
+      <div class="choice-group" data-field="hotFlash">
+        <button class="choice-btn" data-val="none">无</button>
+        <button class="choice-btn" data-val="mild">轻微</button>
+        <button class="choice-btn" data-val="obvious">明显</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">起床状态</label>
+      <div class="choice-group" data-field="wakeState">
+        <button class="choice-btn" data-val="fresh">精神</button>
+        <button class="choice-btn" data-val="ok">还行</button>
+        <button class="choice-btn" data-val="tired">疲惫</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: 运动 -->
+  <div class="step" id="step-2">
+    <div class="step-title">
+      <span class="icon" style="background:var(--teal-light);color:var(--teal)">&#127939;</span>
+      运动记录
+    </div>
+    <div class="form-group">
+      <label class="form-label">今天运动了吗？</label>
+      <div class="choice-group" data-field="exercised">
+        <button class="choice-btn" data-val="yes">运动了</button>
+        <button class="choice-btn" data-val="no">休息日</button>
+      </div>
+    </div>
+    <div id="exerciseDetail" style="display:none">
+      <div class="form-group">
+        <label class="form-label">运动类型</label>
+        <div class="checkbox-group" data-field="exerciseTypes">
+          <label class="check-item" data-val="walk"><span class="check-box"></span>快走</label>
+          <label class="check-item" data-val="run"><span class="check-box"></span>跑步</label>
+          <label class="check-item" data-val="yoga"><span class="check-box"></span>瑜伽</label>
+          <label class="check-item" data-val="strength"><span class="check-box"></span>力量训练</label>
+          <label class="check-item" data-val="swim"><span class="check-box"></span>游泳</label>
+          <label class="check-item" data-val="bike"><span class="check-box"></span>骑车</label>
+          <label class="check-item" data-val="dance"><span class="check-box"></span>舞蹈</label>
+          <label class="check-item" data-val="other"><span class="check-box"></span>其他</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">运动时长（分钟）</label>
+          <input class="form-input" type="number" id="f-exDuration" placeholder="30" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">运动强度</label>
+          <div class="choice-group" data-field="exIntensity">
+            <button class="choice-btn" data-val="light">轻</button>
+            <button class="choice-btn" data-val="mid">中</button>
+            <button class="choice-btn" data-val="high">高</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">运动时段</label>
+        <div class="choice-group" data-field="exTiming">
+          <button class="choice-btn" data-val="fasting">空腹</button>
+          <button class="choice-btn" data-val="postmeal">餐后</button>
+          <button class="choice-btn" data-val="evening">晚间</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: 身体与情绪 -->
+  <div class="step" id="step-3">
+    <div class="step-title">
+      <span class="icon" style="background:var(--coral-light);color:var(--coral)">&#129505;</span>
+      身体与情绪
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">空腹血糖 (mmol/L)</label>
+        <input class="form-input" type="number" step="0.1" id="f-fastingGlu" placeholder="可选">
+      </div>
+      <div class="form-group">
+        <label class="form-label">餐后2h血糖 (mmol/L)</label>
+        <input class="form-input" type="number" step="0.1" id="f-postGlu" placeholder="可选">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">体重 (kg)</label>
+        <input class="form-input" type="number" step="0.1" id="f-weight" placeholder="可选">
+      </div>
+      <div class="form-group">
+        <label class="form-label">血压 (mmHg)</label>
+        <input class="form-input" id="f-bp" placeholder="如 120/80，可选">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">今日情绪</label>
+      <div class="choice-group" data-field="mood">
+        <button class="choice-btn" data-val="good">好</button>
+        <button class="choice-btn" data-val="ok">平</button>
+        <button class="choice-btn" data-val="low">低落</button>
+        <button class="choice-btn" data-val="irritable">烦躁</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">压力水平</label>
+      <div class="choice-group" data-field="stress">
+        <button class="choice-btn" data-val="low">低</button>
+        <button class="choice-btn" data-val="mid">中</button>
+        <button class="choice-btn" data-val="high">高</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">身体不适（可多选）</label>
+      <div class="checkbox-group" data-field="symptoms">
+        <label class="check-item" data-val="hotflash"><span class="check-box"></span>潮热</label>
+        <label class="check-item" data-val="headache"><span class="check-box"></span>头痛</label>
+        <label class="check-item" data-val="joint"><span class="check-box"></span>关节不适</label>
+        <label class="check-item" data-val="fatigue"><span class="check-box"></span>乏力</label>
+        <label class="check-item" data-val="bloating"><span class="check-box"></span>腹胀</label>
+        <label class="check-item" data-val="none"><span class="check-box"></span>无</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">补剂/用药</label>
+      <div class="checkbox-group" data-field="supplements">
+        <label class="check-item" data-val="calcium"><span class="check-box"></span>钙片</label>
+        <label class="check-item" data-val="vitd"><span class="check-box"></span>维生素D</label>
+        <label class="check-item" data-val="magnesium"><span class="check-box"></span>镁</label>
+        <label class="check-item" data-val="none"><span class="check-box"></span>无</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5: 一句话 -->
+  <div class="step" id="step-4">
+    <div class="step-title">
+      <span class="icon" style="background:var(--primary-light);color:var(--primary)">&#9997;</span>
+      今日一句话
+    </div>
+    <div class="form-group">
+      <label class="form-label">今天想记住什么？（一句话就好）</label>
+      <div class="voice-wrap">
+        <textarea class="form-textarea" id="f-quote" placeholder="比如：今天尝试了餐后快走，感觉不错" style="padding-right:48px"></textarea>
+        <button class="voice-btn" id="voiceBtnQuote" onclick="startVoice('f-quote','voiceBtnQuote')" title="语音输入">&#127908;</button>
+      </div>
+    </div>
+    <div style="margin-top:20px">
+      <button class="btn btn-primary btn-block" onclick="saveLog()">保存今日记录</button>
+    </div>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-outline" id="prevBtn" onclick="prevStep()" style="display:none">上一步</button>
+    <button class="btn btn-primary" id="nextBtn" onclick="nextStep()" style="flex:1">下一步</button>
+  </div>
+</div>
+
+<!-- ===== 历史记录 ===== -->
+<div class="page" id="page-history">
+  <div class="card">
+    <div class="card-title">历史记录</div>
+    <div id="historyList">
+      <div class="empty-state">
+        <div class="empty-icon">&#128221;</div>
+        <p>还没有记录</p>
+        <button class="btn btn-primary" onclick="switchPage('log')">开始第一次打卡</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 每周总结 ===== -->
+<div class="page" id="page-weekly">
+  <div class="card">
+    <div class="card-title">本周总结</div>
+    <div id="weeklyContent">
+      <div class="empty-state">
+        <div class="empty-icon">&#128200;</div>
+        <p>至少需要3天的记录才能生成总结</p>
+        <button class="btn btn-primary" onclick="switchPage('log')">去打卡</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 详情弹窗 ===== -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail(event)">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<script>
+const DAYS=['周日','周一','周二','周三','周四','周五','周六'];
+const STORE_KEY='health_diary_logs';
+let currentStep=0;
+const totalSteps=5;
+const formData={choiceFields:{},checkFields:{}};
+
+// Init
+document.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  document.getElementById('headerDate').textContent=`${now.getMonth()+1}月${now.getDate()}日 ${DAYS[now.getDay()]}`;
+  renderWizardSteps();
+  bindChoiceButtons();
+  bindCheckButtons();
+  bindExerciseToggle();
+  loadTodayData();
+  refreshHome();
+});
+
+function getLogs(){
+  try{return JSON.parse(localStorage.getItem(STORE_KEY)||'[]')}catch(e){return[]}
+}
+function saveLogs(logs){localStorage.setItem(STORE_KEY,JSON.stringify(logs))}
+
+function todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+
+function loadTodayData(){
+  const logs=getLogs();
+  const today=logs.find(l=>l.date===todayKey());
+  if(today) fillFormFromLog(today);
+}
+
+function fillFormFromLog(log){
+  document.getElementById('f-allFood').value=log.allFood||'';
+  document.getElementById('f-quote').value=log.quote||'';
+  if(log.sleepTime)document.getElementById('f-sleepTime').value=log.sleepTime;
+  if(log.wakeTime)document.getElementById('f-wakeTime').value=log.wakeTime;
+  if(log.exDuration)document.getElementById('f-exDuration').value=log.exDuration;
+  if(log.fastingGlu)document.getElementById('f-fastingGlu').value=log.fastingGlu;
+  if(log.postGlu)document.getElementById('f-postGlu').value=log.postGlu;
+  if(log.weight)document.getElementById('f-weight').value=log.weight;
+  if(log.bp)document.getElementById('f-bp').value=log.bp;
+  // restore choices
+  if(log.choices){
+    Object.entries(log.choices).forEach(([k,v])=>{
+      const btn=document.querySelector(`.choice-group[data-field="${k}"] .choice-btn[data-val="${v}"]`);
+      if(btn){btn.classList.add('selected');formData.choiceFields[k]=v}
+    });
+  }
+  if(log.checks){
+    Object.entries(log.checks).forEach(([k,arr])=>{
+      arr.forEach(v=>{
+        const item=document.querySelector(`.checkbox-group[data-field="${k}"] .check-item[data-val="${v}"]`);
+        if(item){item.classList.add('checked');item.querySelector('input').checked=true}
+      });
+      formData.checkFields[k]=arr;
+    });
+  }
+  if(log.choices&&log.choices.exercised==='yes'){
+    document.getElementById('exerciseDetail').style.display='block';
+  }
+}
+
+// Choice buttons
+function bindChoiceButtons(){
+  document.querySelectorAll('.choice-group').forEach(g=>{
+    const field=g.dataset.field;
+    g.querySelectorAll('.choice-btn').forEach(b=>{
+      b.addEventListener('click',()=>{
+        g.querySelectorAll('.choice-btn').forEach(x=>x.classList.remove('selected'));
+        b.classList.add('selected');
+        formData.choiceFields[field]=b.dataset.val;
+        if(field==='exercised'){
+          document.getElementById('exerciseDetail').style.display=b.dataset.val==='yes'?'block':'none';
+        }
+      });
+    });
+  });
+}
+
+// Check buttons
+function bindCheckButtons(){
+  document.querySelectorAll('.checkbox-group').forEach(g=>{
+    const field=g.dataset.field;
+    if(!formData.checkFields[field])formData.checkFields[field]=[];
+    g.querySelectorAll('.check-item').forEach(item=>{
+      const inp=item.querySelector('input');
+      item.addEventListener('click',()=>{
+        const v=item.dataset.val;
+        if(v==='none'){
+          g.querySelectorAll('.check-item').forEach(x=>{x.classList.remove('checked');x.querySelector('input').checked=false});
+          item.classList.add('checked');inp.checked=true;
+          formData.checkFields[field]=['none'];
+        }else{
+          const noneItem=g.querySelector('.check-item[data-val="none"]');
+          if(noneItem){noneItem.classList.remove('checked');noneItem.querySelector('input').checked=false;
+            formData.checkFields[field]=formData.checkFields[field].filter(x=>x!=='none');
+          }
+          item.classList.toggle('checked');inp.checked=!inp.checked;
+          if(item.classList.contains('checked')){
+            formData.checkFields[field].push(v);
+          }else{
+            formData.checkFields[field]=formData.checkFields[field].filter(x=>x!==v);
+          }
+        }
+      });
+    });
+  });
+}
+
+function bindExerciseToggle(){}
+
+// Voice Input
+function startVoice(inputId,btnId){
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    showToast('您的浏览器不支持语音输入');
+    return;
+  }
+  const input=document.getElementById(inputId);
+  const btn=document.getElementById(btnId);
+  const recognition=new SpeechRecognition();
+  recognition.lang='zh-CN';
+  recognition.continuous=true;
+  recognition.interimResults=true;
+
+  let finalTranscript=input.value||'';
+  recognition.onstart=()=>{
+    btn.classList.add('recording');
+    // Show hint for food field
+    if(inputId==='f-allFood'){
+      document.getElementById('voiceHintFood').classList.add('show');
+    }
+  };
+  recognition.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){
+        finalTranscript+=e.results[i][0].transcript;
+      }else{
+        interim+=e.results[i][0].transcript;
+      }
+    }
+    input.value=finalTranscript+interim;
+  };
+  recognition.onerror=(e)=>{
+    btn.classList.remove('recording');
+    if(inputId==='f-allFood'){
+      document.getElementById('voiceHintFood').classList.remove('show');
+    }
+    if(e.error==='not-allowed'){
+      showToast('请允许麦克风权限');
+    }else{
+      showToast('语音识别出错，请重试');
+    }
+  };
+  recognition.onend=()=>{
+    btn.classList.remove('recording');
+    if(inputId==='f-allFood'){
+      document.getElementById('voiceHintFood').classList.remove('show');
+    }
+    input.value=finalTranscript;
+    // Auto-trigger input event for any listeners
+    input.dispatchEvent(new Event('input'));
+  };
+
+  // Stop if already recording
+  if(btn.classList.contains('recording')){
+    recognition.stop();
+    return;
+  }
+
+  // Start with current text as base
+  finalTranscript=input.value||'';
+  recognition.start();
+}
+
+// Wizard
+function renderWizardSteps(){
+  const c=document.getElementById('wizardSteps');
+  const labels=['饮食','睡眠','运动','情绪','总结'];
+  let h='';
+  for(let i=0;i<totalSteps;i++){
+    if(i>0)h+=`<div class="wizard-line" id="wline-${i}"></div>`;
+    h+=`<div class="wizard-dot" id="wdot-${i}" title="${labels[i]}"></div>`;
+  }
+  c.innerHTML=h;
+  updateWizard();
+}
+
+function updateWizard(){
+  for(let i=0;i<totalSteps;i++){
+    const dot=document.getElementById('wdot-'+i);
+    dot.classList.toggle('active',i===currentStep);
+    dot.classList.toggle('done',i<currentStep);
+    if(i>0){
+      const line=document.getElementById('wline-'+i);
+      line.classList.toggle('done',i<=currentStep);
+    }
+  }
+  document.getElementById('logProgress').style.width=((currentStep+1)/totalSteps*100)+'%';
+  document.getElementById('prevBtn').style.display=currentStep>0?'block':'none';
+  document.getElementById('nextBtn').textContent=currentStep===totalSteps-1?'保存':'下一步';
+  if(currentStep===totalSteps-1){
+    document.getElementById('nextBtn').style.display='none';
+  }else{
+    document.getElementById('nextBtn').style.display='block';
+  }
+  document.querySelectorAll('.step').forEach((s,i)=>s.classList.toggle('active',i===currentStep));
+}
+
+function nextStep(){if(currentStep<totalSteps-1){currentStep++;updateWizard()}}
+function prevStep(){if(currentStep>0){currentStep--;updateWizard()}}
+
+// Save
+function saveLog(){
+  const log={
+    date:todayKey(),
+    allFood:document.getElementById('f-allFood').value,
+    sleepTime:document.getElementById('f-sleepTime').value,
+    wakeTime:document.getElementById('f-wakeTime').value,
+    exDuration:document.getElementById('f-exDuration').value,
+    fastingGlu:document.getElementById('f-fastingGlu').value,
+    postGlu:document.getElementById('f-postGlu').value,
+    weight:document.getElementById('f-weight').value,
+    bp:document.getElementById('f-bp').value,
+    quote:document.getElementById('f-quote').value,
+    choices:{...formData.choiceFields},
+    checks:{...formData.checkFields}
+  };
+  const logs=getLogs();
+  const idx=logs.findIndex(l=>l.date===log.date);
+  if(idx>=0)logs[idx]=log;else logs.push(log);
+  logs.sort((a,b)=>b.date.localeCompare(a.date));
+  saveLogs(logs);
+  showToast('保存成功');
+  refreshHome();
+  switchPage('home');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// Pages
+function switchPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>{
+    b.classList.toggle('active',['home','log','history','weekly'][i]===name);
+  });
+  if(name==='history')renderHistory();
+  if(name==='weekly')renderWeekly();
+  if(name==='home')refreshHome();
+}
+
+// Home
+function refreshHome(){
+  const logs=getLogs();
+  const today=logs.find(l=>l.date===todayKey());
+  if(today){
+    const sleep=calcSleepHours(today.sleepTime,today.wakeTime);
+    document.getElementById('hm-sleep').textContent=sleep?sleep+'h':'--';
+    document.getElementById('hm-exercise').textContent=today.exDuration?today.exDuration+'min':'--';
+    const moodMap={good:'好',ok:'平',low:'低落',irritable:'烦躁'};
+    document.getElementById('hm-mood').textContent=today.choices.mood?moodMap[today.choices.mood]:'--';
+    const waterMap={'4':'<4','6':'5-6','8':'7-8','10':'8+'};
+    document.getElementById('hm-water').textContent=today.choices.water?waterMap[today.choices.water]+'杯':'--';
+    if(today.quote){
+      document.getElementById('homeTodayLog').style.display='block';
+      document.getElementById('homeQuote').textContent=today.quote;
+    }else{
+      document.getElementById('homeTodayLog').style.display='none';
+    }
+  }else{
+    document.getElementById('hm-sleep').textContent='--';
+    document.getElementById('hm-exercise').textContent='--';
+    document.getElementById('hm-mood').textContent='--';
+    document.getElementById('hm-water').textContent='--';
+    document.getElementById('homeTodayLog').style.display='none';
+  }
+}
+
+function calcSleepHours(sleepT,wakeT){
+  if(!sleepT||!wakeT)return null;
+  const [sh,sm]=sleepT.split(':').map(Number);
+  const [wh,wm]=wakeT.split(':').map(Number);
+  let sleepMin=sh*60+sm;
+  let wakeMin=wh*60+wm;
+  if(wakeMin<=sleepMin)wakeMin+=24*60;
+  const diff=wakeMin-sleepMin;
+  return (diff/60).toFixed(1);
+}
+
+// History
+function renderHistory(){
+  const logs=getLogs();
+  const list=document.getElementById('historyList');
+  if(logs.length===0){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">&#128221;</div><p>还没有记录</p><button class="btn btn-primary" onclick="switchPage('log')">开始第一次打卡</button></div>`;
+    return;
+  }
+  let html='';
+  logs.slice(0,30).forEach(log=>{
+    const d=new Date(log.date);
+    const dayStr=DAYS[d.getDay()];
+    const moodMap={good:'好',ok:'平',low:'低',irritable:'烦'};
+    const mood=moodMap[log.choices.mood]||'';
+    const sleep=calcSleepHours(log.sleepTime,log.wakeTime);
+    let tags='';
+    if(mood)tags+=`<span class="tag tag-purple">${mood}</span>`;
+    if(sleep)tags+=`<span class="tag tag-teal">${sleep}h</span>`;
+    if(log.choices.exercised==='yes')tags+=`<span class="tag tag-green">运动</span>`;
+    if(log.choices.dietRating==='good')tags+=`<span class="tag tag-green">饮食OK</span>`;
+    if(log.choices.dietRating==='bad')tags+=`<span class="tag tag-amber">饮食注意</span>`;
+    if(log.choices.stress==='high')tags+=`<span class="tag tag-red">高压</span>`;
+    const summary= log.quote || (log.allFood ? log.allFood.substring(0,40)+'...' : '');
+    html+=`<div class="history-item" onclick="showDetail('${log.date}')">
+      <div class="history-date">${log.date} ${dayStr}</div>
+      <div class="history-summary">${summary.substring(0,40)}</div>
+      <div class="history-tags">${tags}</div>
+    </div>`;
+  });
+  list.innerHTML=html;
+}
+
+function showDetail(date){
+  const logs=getLogs();
+  const log=logs.find(l=>l.date===date);
+  if(!log)return;
+  const panel=document.getElementById('detailPanel');
+  const moodMap={good:'好',ok:'平',low:'低落',irritable:'烦躁'};
+  const qualityMap={good:'好',ok:'一般',bad:'差'};
+  const carbMap={low:'低碳水日',mid:'中等',high:'偏高'};
+  const waterMap={'4':'<4杯','6':'5-6杯','8':'7-8杯','10':'8+杯'};
+  const stressMap={low:'低',mid:'中',high:'高'};
+  const wakeMap={fresh:'精神',ok:'还行',tired:'疲惫'};
+  const hotMap={none:'无',mild:'轻微',obvious:'明显'};
+  const exTypeMap={walk:'快走',run:'跑步',yoga:'瑜伽',strength:'力量训练',swim:'游泳',bike:'骑车',dance:'舞蹈',other:'其他'};
+  const symMap={hotflash:'潮热',headache:'头痛',joint:'关节不适',fatigue:'乏力',bloating:'腹胀',none:'无'};
+  const suppMap={calcium:'钙片',vitd:'维D',magnesium:'镁',none:'无'};
+  const exIntensityMap={light:'轻',mid:'中',high:'高'};
+  const exTimingMap={fasting:'空腹',postmeal:'餐后',evening:'晚间'};
+
+  let html=`<div class="detail-close"><button onclick="closeDetail()">&times;</button></div>`;
+  html+=`<div style="font-size:16px;font-weight:600;margin-bottom:16px">${log.date}</div>`;
+
+  // 饮食
+  html+=`<div class="card-title" style="font-size:14px">&#127858; 饮食</div>`;
+  if(log.allFood){
+    html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:8px;white-space:pre-line">${log.allFood}</div>`;
+  }
+  const overallCarb=log.choices.overallCarb;
+  if(overallCarb)html+=`<div style="font-size:13px;margin-bottom:4px">碳水水平：<span class="tag tag-${overallCarb==='high'?'amber':'green'}">${carbMap[overallCarb]||''}</span></div>`;
+  html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">饮水：${waterMap[log.choices.water]||'--'}</div>`;
+  html+=`<div class="section-divider"></div>`;
+
+  // 睡眠
+  const sleep=calcSleepHours(log.sleepTime,log.wakeTime);
+  html+=`<div class="card-title" style="font-size:14px">&#128164; 睡眠</div>`;
+  html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">${log.sleepTime||'--'} 入睡 → ${log.wakeTime||'--'} 起床</div>`;
+  html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">时长 ${sleep||'--'}h · 质量 ${qualityMap[log.choices.sleepQuality]||'--'} · 起床${wakeMap[log.choices.wakeState]||'--'}</div>`;
+  html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">夜醒${log.choices.nightWakes||'--'}次 · 潮热${hotMap[log.choices.hotFlash]||'--'}</div>`;
+  html+=`<div class="section-divider"></div>`;
+
+  // 运动
+  html+=`<div class="card-title" style="font-size:14px">&#127939; 运动</div>`;
+  if(log.choices.exercised==='yes'){
+    const types=(log.checks.exerciseTypes||[]).map(t=>exTypeMap[t]).filter(Boolean).join('、');
+    html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">${types||'--'} · ${log.exDuration||'--'}分钟 · ${exIntensityMap[log.choices.exIntensity]||'--'}强度</div>`;
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">时段：${exTimingMap[log.choices.exTiming]||'--'}</div>`;
+  }else{
+    html+=`<div style="font-size:13px;color:var(--text3)">休息日</div>`;
+  }
+  html+=`<div class="section-divider"></div>`;
+
+  // 情绪
+  html+=`<div class="card-title" style="font-size:14px">&#129505; 身体与情绪</div>`;
+  html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">情绪：${moodMap[log.choices.mood]||'--'} · 压力：${stressMap[log.choices.stress]||'--'}</div>`;
+  if(log.fastingGlu)html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">空腹血糖：${log.fastingGlu} mmol/L</div>`;
+  if(log.postGlu)html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">餐后2h血糖：${log.postGlu} mmol/L</div>`;
+  if(log.weight)html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">体重：${log.weight} kg</div>`;
+  if(log.bp)html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">血压：${log.bp} mmHg</div>`;
+  const symps=(log.checks.symptoms||[]).map(s=>symMap[s]).filter(Boolean).join('、');
+  if(symps&&symps!=='无')html+=`<div style="font-size:13px;color:var(--coral);margin-bottom:4px">不适：${symps}</div>`;
+  const supps=(log.checks.supplements||[]).map(s=>suppMap[s]).filter(Boolean).join('、');
+  if(supps)html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">补剂：${supps}</div>`;
+  html+=`<div class="section-divider"></div>`;
+
+  if(log.quote)html+=`<div style="font-size:14px;font-style:italic;color:var(--text2);padding:8px 0">"${log.quote}"</div>`;
+
+  panel.innerHTML=html;
+  document.getElementById('detailOverlay').classList.add('show');
+}
+
+function closeDetail(e){
+  if(e&&e.target!==document.getElementById('detailOverlay'))return;
+  document.getElementById('detailOverlay').classList.remove('show');
+}
+
+// Weekly
+function renderWeekly(){
+  const logs=getLogs();
+  const content=document.getElementById('weeklyContent');
+  if(logs.length<3){
+    content.innerHTML=`<div class="empty-state"><div class="empty-icon">&#128200;</div><p>至少需要3天的记录才能生成总结</p><button class="btn btn-primary" onclick="switchPage('log')">去打卡</button></div>`;
+    return;
+  }
+  // get last 7 days
+  const now=new Date();
+  const last7=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(now);
+    d.setDate(d.getDate()-i);
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    last7.push({key,day:DAYS[d.getDay()],log:logs.find(l=>l.date===key)});
+  }
+
+  const daysWithData=last7.filter(d=>d.log);
+  if(daysWithData.length<3){
+    content.innerHTML=`<div class="empty-state"><div class="empty-icon">&#128200;</div><p>最近7天只有${daysWithData.length}天记录，至少需要3天</p><button class="btn btn-primary" onclick="switchPage('log')">去打卡</button></div>`;
+    return;
+  }
+
+  let html='';
+
+  // 指标概览
+  html+=`<div class="metric-grid" style="margin-bottom:16px">`;
+  const avgSleep=daysWithData.reduce((s,d)=>s+parseFloat(calcSleepHours(d.log.sleepTime,d.log.wakeTime)||0),0)/daysWithData.length;
+  const avgEx=daysWithData.filter(d=>d.log.choices.exercised==='yes').length;
+  const avgWater=daysWithData.reduce((s,d)=>{
+    const w=d.log.choices.water;return s+(w==='10'?9:w==='8'?7.5:w==='6'?5.5:3);
+  },0)/daysWithData.length;
+  const highStress=daysWithData.filter(d=>d.log.choices.stress==='high').length;
+  html+=`<div class="metric teal"><div class="metric-val">${avgSleep.toFixed(1)}h</div><div class="metric-label">平均睡眠</div></div>`;
+  html+=`<div class="metric green"><div class="metric-val">${avgEx}/${daysWithData.length}</div><div class="metric-label">运动天数</div></div>`;
+  html+=`<div class="metric purple"><div class="metric-val">${avgWater.toFixed(1)}</div><div class="metric-label">日均饮水(杯)</div></div>`;
+  html+=`<div class="metric ${highStress>=3?'red':'amber'}"><div class="metric-val">${highStress}天</div><div class="metric-label">高压天数</div></div>`;
+  html+=`</div>`;
+
+  // 睡眠趋势
+  html+=`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px">睡眠时长趋势</div>`;
+  html+=`<div class="chart-bar-container">`;
+  last7.forEach(d=>{
+    const h=d.log?parseFloat(calcSleepHours(d.log.sleepTime,d.log.wakeTime)||0):0;
+    const pct=Math.min(h/9*100,100);
+    const color=h>=7?'var(--primary)':h>=5?'var(--accent)':'var(--danger)';
+    html+=`<div class="chart-bar-wrap"><div class="chart-val">${h>0?h:''}</div><div class="chart-bar" style="height:${h>0?pct:4}%;background:${h>0?color:'var(--border)'}"></div><div class="chart-day">${d.day}</div></div>`;
+  });
+  html+=`</div></div>`;
+
+  // 情绪趋势
+  html+=`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px">情绪趋势</div>`;
+  html+=`<div class="chart-bar-container">`;
+  const moodScore={good:3,ok:2,low:1,irritable:1};
+  last7.forEach(d=>{
+    const s=d.log?moodScore[d.log.choices.mood]||0:0;
+    const pct=s/3*100;
+    const color=s>=3?'var(--primary)':s>=2?'var(--accent)':'var(--danger)';
+    html+=`<div class="chart-bar-wrap"><div class="chart-val">${s>0?(['','低','平','好'][s]):''}</div><div class="chart-bar" style="height:${s>0?pct:4}%;background:${s>0?color:'var(--border)'}"></div><div class="chart-day">${d.day}</div></div>`;
+  });
+  html+=`</div></div>`;
+
+  // 压力趋势
+  html+=`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px">压力趋势</div>`;
+  html+=`<div class="chart-bar-container">`;
+  const stressScore={low:1,mid:2,high:3};
+  last7.forEach(d=>{
+    const s=d.log?stressScore[d.log.choices.stress]||0:0;
+    const pct=s/3*100;
+    const color=s>=3?'var(--danger)':s>=2?'var(--accent)':'var(--primary)';
+    html+=`<div class="chart-bar-wrap"><div class="chart-val">${s>0?(['','低','中','高'][s]):''}</div><div class="chart-bar" style="height:${s>0?pct:4}%;background:${s>0?color:'var(--border)'}"></div><div class="chart-day">${d.day}</div></div>`;
+  });
+  html+=`</div></div>`;
+
+  // 饮食碳水分析
+  const highCarbDays=daysWithData.filter(d=>{
+    return d.log.choices.overallCarb==='high';
+  }).length;
+  html+=`<div class="card-title" style="font-size:14px;margin-top:8px">&#127858; 饮食分析</div>`;
+  html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:8px">碳水偏高的天数：${highCarbDays}天</div>`;
+
+  // 血糖数据
+  const gluData=daysWithData.filter(d=>d.log.fastingGlu||d.log.postGlu);
+  if(gluData.length>0){
+    html+=`<div class="card-title" style="font-size:14px">&#129505; 血糖数据</div>`;
+    gluData.forEach(d=>{
+      const fg=d.log.fastingGlu?`${d.log.fastingGlu} mmol/L`:'--';
+      const pg=d.log.postGlu?`${d.log.postGlu} mmol/L`:'--';
+      const fgHigh=d.log.fastingGlu&&parseFloat(d.log.fastingGlu)>=5.6;
+      const pgHigh=d.log.postGlu&&parseFloat(d.log.postGlu)>=7.8;
+      html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">${d.key}：空腹 <span style="color:${fgHigh?'var(--danger)':'var(--primary)'}"> ${fg}</span> · 餐后2h <span style="color:${pgHigh?'var(--danger)':'var(--primary)'}">${pg}</span></div>`;
+    });
+  }
+
+  // 围绝经期症状
+  const hotFlashDays=daysWithData.filter(d=>d.log.choices.hotFlash&&d.log.choices.hotFlash!=='none').length;
+  const symptomDays=daysWithData.filter(d=>d.log.checks.symptoms&&d.log.checks.symptoms.length>0&&!(d.log.checks.symptoms.length===1&&d.log.checks.symptoms[0]==='none')).length;
+  if(hotFlashDays>0||symptomDays>0){
+    html+=`<div class="card-title" style="font-size:14px;margin-top:8px">&#129505; 围绝经期症状</div>`;
+    if(hotFlashDays>0)html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">潮热/盗汗：${hotFlashDays}天</div>`;
+    if(symptomDays>0)html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">身体不适：${symptomDays}天</div>`;
+  }
+
+  // 本周评分
+  html+=`<div class="card-title" style="font-size:14px;margin-top:16px">本周评分</div>`;
+  const dietScore=highCarbDays<=1?5:highCarbDays<=3?3:1;
+  const sleepScore=avgSleep>=7?5:avgSleep>=6?3:1;
+  const exScore=avgEx>=5?5:avgEx>=3?4:avgEx>=1?2:1;
+  const stressScore2=highStress<=1?5:highStress<=3?3:1;
+  const moodScoreAvg=daysWithData.reduce((s,d)=>s+moodScore[d.log.choices.mood]||2,0)/daysWithData.length;
+  const moodScoreVal=moodScoreAvg>=2.5?5:moodScoreAvg>=2?3:1;
+  const totalScore=Math.round((dietScore+sleepScore+exScore+stressScore2+moodScoreVal)/5*10)/10;
+
+  const dims=[['饮食',dietScore],['睡眠',sleepScore],['运动',exScore],['压力',stressScore2],['情绪',moodScoreVal]];
+  dims.forEach(([label,score])=>{
+    html+=`<div class="week-score"><div class="week-score-label">${label}</div><div class="week-score-stars">`;
+    for(let i=1;i<=5;i++)html+=`<span class="star ${i<=score?'filled':''}">${i<=score?'&#9733;':'&#9734;'}</span>`;
+    html+=`</div></div>`;
+  });
+  html+=`<div style="font-size:15px;font-weight:600;color:var(--primary);margin-top:8px">综合评分：${totalScore} / 5</div>`;
+
+  // 建议
+  html+=`<div class="advice-box" style="margin-top:16px"><strong>全能健康顾问的建议</strong>`;
+  if(highCarbDays>=3)html+=`碳水偏高较多，建议每餐先吃蔬菜再吃主食，选择低GI主食（杂粮饭/燕麦）。`;
+  if(avgSleep<6.5)html+=`睡眠不足7小时，建议睡前1小时放下手机，试试4-7-8呼吸法。`;
+  if(avgSleep>=6.5&&avgSleep<7)html+=`睡眠接近7小时，还有提升空间，固定入睡时间有帮助。`;
+  if(highStress>=2)html+=`本周压力较大，试试压力工具包里的5分钟应急方法。餐后快走20分钟也是天然的减压药。`;
+  if(avgEx<3)html+=`运动天数偏少，餐后快走20分钟是最简单的起步方式。`;
+  if(hotFlashDays>=2)html+=`潮热出现较多，建议补充大豆异黄酮（每天1杯豆浆或1块豆腐），卧室温度调低1-2度。`;
+  if(gluData.length>0){
+    const highFg=gluData.filter(d=>d.log.fastingGlu&&parseFloat(d.log.fastingGlu)>=5.6).length;
+    if(highFg>0)html+=`空腹血糖有偏高记录，注意晚餐碳水量和餐后运动。`;
+  }
+  if(totalScore>=4)html+=`整体状态不错！继续保持，你的运动习惯是最好的健康资产。`;
+  html+=`</div>`;
+
+  content.innerHTML=html;
+}
+</script>
+
+<script>
+// Service Worker Registration
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(()=>{
+    console.log('SW registered');
+  }).catch(err=>{
+    console.log('SW registration failed:',err);
+  });
+}
+
+// PWA Install Prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  const installBar=document.createElement('div');
+  installBar.id='installBar';
+  installBar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--primary);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;z-index:999;font-size:14px;box-shadow:0 -2px 10px rgba(0,0,0,0.1)';
+  installBar.innerHTML='<span>添加到主屏幕，像App一样使用</span><div style="display:flex;gap:10px"><button onclick="dismissInstall()" style="background:transparent;border:1px solid rgba(255,255,255,0.5);color:white;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">以后</button><button onclick="installApp()" style="background:white;color:var(--primary);border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500">安装</button></div>';
+  document.body.appendChild(installBar);
+});
+
+function installApp(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(r=>{
+      if(r.outcome==='accepted')console.log('PWA installed');
+      deferredPrompt=null;
+    });
+  }
+  dismissInstall();
+}
+function dismissInstall(){
+  const bar=document.getElementById('installBar');
+  if(bar)bar.remove();
+}
+</script>
+</body>
+</html>
