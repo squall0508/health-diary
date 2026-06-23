@@ -485,6 +485,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
     本周总结
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="exportData()">导出数据</button>
+      <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="document.getElementById('importFileInput').click()">导入数据</button>
+      <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importData(event)">
       <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="copyWeeklyReport()">复制周报</button>
     </div>
   </div>
@@ -1379,6 +1381,38 @@ function exportData(){
   a.click();
   URL.revokeObjectURL(url);
   showToast('数据文件已下载，可发送给全能健康顾问');
+}
+
+// 导入数据
+function importData(event){
+  const file=event.target.files[0];
+  if(!file){return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.logs||!Array.isArray(data.logs)){showToast('文件格式不正确');return;}
+      const existing=getLogs();
+      // 合并：以日期为 key，导入的数据优先（覆盖同名日期）
+      const map={};
+      existing.forEach(l=>{map[l.date]=l});
+      data.logs.forEach(l=>{map[l.date]=l});
+      const merged=Object.values(map);
+      merged.sort((a,b)=>b.date.localeCompare(a.date));
+      saveLogs(merged);
+      showToast(`导入成功！共 ${data.logs.length} 条记录，合并后共 ${merged.length} 条`);
+      refreshHome();
+      // 如果当前在总结页，刷新
+      if(document.getElementById('page-weekly').classList.contains('active'))renderWeekly();
+      if(document.getElementById('page-history').classList.contains('active'))renderHistory();
+    }catch(err){
+      showToast('文件解析失败，请确认是导出的 JSON 文件');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+  // 清空 input，允许重复选择同一文件
+  event.target.value='';
 }
 
 if('serviceWorker' in navigator){
