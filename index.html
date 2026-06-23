@@ -176,10 +176,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
       <div class="metric purple"><div class="metric-val" id="hm-water">--</div><div class="metric-label">饮水量</div></div>
     </div>
   </div>
-  <div class="card" id="homeNoLog" style="display:none">
-    <div class="card-title">今日尚未打卡</div>
-    <div style="font-size:13px;color:var(--text3)">今天还没有记录，快去打卡吧～</div>
-  </div>
   <div class="card" id="homeTodayLog" style="display:none">
     <div class="card-title">今日一句话</div>
     <div style="font-size:14px;color:var(--text2);font-style:italic" id="homeQuote"></div>
@@ -551,7 +547,7 @@ function getLogs(){
 }
 function saveLogs(logs){localStorage.setItem(STORE_KEY,JSON.stringify(logs))}
 
-function todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function todayKey(){const d=new Date();const tz=d.getTimezoneOffset();const local=new Date(d.getTime()-tz*60000);return local.toISOString().split('T')[0];}
 
 function loadTodayData(){
   const logs=getLogs();
@@ -620,7 +616,7 @@ function fillFormFromLog(log){
     Object.entries(log.checks).forEach(([k,arr])=>{
       arr.forEach(v=>{
         const item=document.querySelector(`.checkbox-group[data-field="${k}"] .check-item[data-val="${v}"]`);
-        if(item){item.classList.add('checked');item.querySelector('input').checked=true}
+        if(item){item.classList.add('checked');const chk=item.querySelector('input[type="checkbox"]');if(chk)chk.checked=true;}
       });
       formData.checkFields[k]=arr;
     });
@@ -666,21 +662,21 @@ function bindCheckButtons(){
     const field=g.dataset.field;
     if(!formData.checkFields[field])formData.checkFields[field]=[];
     g.querySelectorAll('.check-item').forEach(item=>{
-      const inp=item.querySelector('input');
+      const chk=item.querySelector('input[type="checkbox"]');
       item.addEventListener('click',(e)=>{
-        const v=item.dataset.val;
-        // 阻止输入框的点击冒泡
+        // 点击文本输入框时不切换勾选状态
         if(e.target.tagName==='INPUT'&&e.target.type==='text')return;
+        const v=item.dataset.val;
         if(v==='none'){
-          g.querySelectorAll('.check-item').forEach(x=>{x.classList.remove('checked');x.querySelector('input').checked=false});
-          item.classList.add('checked');inp.checked=true;
+          g.querySelectorAll('.check-item').forEach(x=>{x.classList.remove('checked');const c=x.querySelector('input[type="checkbox"]');if(c)c.checked=false;});
+          item.classList.add('checked');if(chk)chk.checked=true;
           formData.checkFields[field]=['none'];
         }else{
           const noneItem=g.querySelector('.check-item[data-val="none"]');
-          if(noneItem){noneItem.classList.remove('checked');noneItem.querySelector('input').checked=false;
+          if(noneItem){noneItem.classList.remove('checked');const c=noneItem.querySelector('input[type="checkbox"]');if(c)c.checked=false;
             formData.checkFields[field]=formData.checkFields[field].filter(x=>x!=='none');
           }
-          item.classList.toggle('checked');inp.checked=!inp.checked;
+          item.classList.toggle('checked');if(chk)chk.checked=!chk.checked;
           if(item.classList.contains('checked')){
             formData.checkFields[field].push(v);
           }else{
@@ -691,7 +687,7 @@ function bindCheckButtons(){
         if(field==='symptoms'){
           const otherItem=g.querySelector('.check-item[data-val="other_sym"]');
           const otherInput=document.getElementById('symOtherInput');
-          if(otherItem.classList.contains('checked')){
+          if(otherItem&&otherItem.classList.contains('checked')){
             otherInput.style.display='inline-block';
           }else{
             otherInput.style.display='none';
@@ -700,7 +696,7 @@ function bindCheckButtons(){
         if(field==='supplements'){
           const otherItem=g.querySelector('.check-item[data-val="other_sup"]');
           const otherInput=document.getElementById('supOtherInput');
-          if(otherItem.classList.contains('checked')){
+          if(otherItem&&otherItem.classList.contains('checked')){
             otherInput.style.display='inline-block';
           }else{
             otherInput.style.display='none';
@@ -900,7 +896,9 @@ function confirmRetroPick(){
 }
 
 function fmtDate(d){
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const tz=d.getTimezoneOffset();
+  const local=new Date(d.getTime()-tz*60000);
+  return local.toISOString().split('T')[0];
 }
 
 function updateLogDateBar(){
@@ -961,8 +959,6 @@ function refreshHome(){
     document.getElementById('hm-mood').textContent=todayLog.choices.mood?moodMap[todayLog.choices.mood]:'--';
     const waterMap={'4':'<4','6':'5-6','8':'7-8','10':'8+'};
     document.getElementById('hm-water').textContent=todayLog.choices.water?waterMap[todayLog.choices.water]+'杯':'--';
-    // 显示今日一句话，隐藏未打卡提示
-    document.getElementById('homeNoLog').style.display='none';
     if(todayLog.quote){
       document.getElementById('homeTodayLog').style.display='block';
       document.getElementById('homeQuote').textContent=todayLog.quote;
@@ -974,8 +970,6 @@ function refreshHome(){
     document.getElementById('hm-exercise').textContent='--';
     document.getElementById('hm-mood').textContent='--';
     document.getElementById('hm-water').textContent='--';
-    // 显示未打卡提示，隐藏今日一句话
-    document.getElementById('homeNoLog').style.display='block';
     document.getElementById('homeTodayLog').style.display='none';
   }
 }
