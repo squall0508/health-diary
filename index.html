@@ -168,7 +168,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
 <!-- ===== 主页 ===== -->
 <div class="page active" id="page-home">
   <div class="card">
-    <div class="card-title"><span style="background:var(--primary-light);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--primary)">今日</span> 健康概览 <span style="font-size:12px;color:var(--text3);font-weight:normal" id="homeDateLabel"></span></div>
+    <div class="card-title"><span style="background:var(--primary-light);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--primary)">昨日</span> 健康概览 <span style="font-size:12px;color:var(--text3);font-weight:normal" id="homeDateLabel"></span></div>
     <div class="metric-grid" id="homeMetrics">
       <div class="metric green"><div class="metric-val" id="hm-sleep">--</div><div class="metric-label">睡眠时长</div></div>
       <div class="metric teal"><div class="metric-val" id="hm-exercise">--</div><div class="metric-label">运动时长</div></div>
@@ -947,21 +947,26 @@ function switchPage(name){
 // Home
 function refreshHome(){
   const logs=getLogs();
-  const today=todayKey();
-  // 显示今天日期
-  document.getElementById('homeDateLabel').textContent=formatDisplayDate(today);
-  const todayLog=logs.find(l=>l.date===today);
-  if(todayLog){
-    const sleep=calcSleepHours(todayLog.sleepTime,todayLog.wakeTime);
+  // 取昨日日期
+  const d=new Date();
+  d.setDate(d.getDate()-1);
+  const tz=d.getTimezoneOffset();
+  const local=new Date(d.getTime()-tz*60000);
+  const yesterday=local.toISOString().split('T')[0];
+  // 显示昨日日期
+  document.getElementById('homeDateLabel').textContent=formatDisplayDate(yesterday)+'（昨日）';
+  const yesterdayLog=logs.find(l=>l.date===yesterday);
+  if(yesterdayLog){
+    const sleep=calcSleepHours(yesterdayLog.sleepTime,yesterdayLog.wakeTime);
     document.getElementById('hm-sleep').textContent=sleep?sleep+'h':'--';
-    document.getElementById('hm-exercise').textContent=todayLog.exDuration?todayLog.exDuration+'min':'--';
+    document.getElementById('hm-exercise').textContent=yesterdayLog.exDuration?yesterdayLog.exDuration+'min':'--';
     const moodMap={good:'好',ok:'平',low:'低落',irritable:'烦躁'};
-    document.getElementById('hm-mood').textContent=todayLog.choices.mood?moodMap[todayLog.choices.mood]:'--';
+    document.getElementById('hm-mood').textContent=yesterdayLog.choices.mood?moodMap[yesterdayLog.choices.mood]:'--';
     const waterMap={'4':'<4','6':'5-6','8':'7-8','10':'8+'};
-    document.getElementById('hm-water').textContent=todayLog.choices.water?waterMap[todayLog.choices.water]+'杯':'--';
-    if(todayLog.quote){
+    document.getElementById('hm-water').textContent=yesterdayLog.choices.water?waterMap[yesterdayLog.choices.water]+'杯':'--';
+    if(yesterdayLog.quote){
       document.getElementById('homeTodayLog').style.display='block';
-      document.getElementById('homeQuote').textContent=todayLog.quote;
+      document.getElementById('homeQuote').textContent=yesterdayLog.quote;
     }else{
       document.getElementById('homeTodayLog').style.display='none';
     }
