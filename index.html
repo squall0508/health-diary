@@ -168,7 +168,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
 <!-- ===== 主页 ===== -->
 <div class="page active" id="page-home">
   <div class="card">
-    <div class="card-title"><span style="background:var(--primary-light);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--primary)">今日</span> 健康概览</div>
+    <div class="card-title"><span style="background:var(--primary-light);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--primary)">今日</span> 健康概览 <span style="font-size:12px;color:var(--text3);font-weight:normal" id="homeDateLabel"></span></div>
     <div class="metric-grid" id="homeMetrics">
       <div class="metric green"><div class="metric-val" id="hm-sleep">--</div><div class="metric-label">睡眠时长</div></div>
       <div class="metric teal"><div class="metric-val" id="hm-exercise">--</div><div class="metric-label">运动时长</div></div>
@@ -176,8 +176,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
       <div class="metric purple"><div class="metric-val" id="hm-water">--</div><div class="metric-label">饮水量</div></div>
     </div>
   </div>
+  <div class="card" id="homeNoLog" style="display:none">
+    <div class="card-title">今日尚未打卡</div>
+    <div style="font-size:13px;color:var(--text3)">今天还没有记录，快去打卡吧～</div>
+  </div>
   <div class="card" id="homeTodayLog" style="display:none">
-    <div class="card-title">今天的一句话说</div>
+    <div class="card-title">今日一句话</div>
     <div style="font-size:14px;color:var(--text2);font-style:italic" id="homeQuote"></div>
   </div>
   <div class="card">
@@ -415,21 +419,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
     <div class="form-group">
       <label class="form-label">身体不适（可多选）</label>
       <div class="checkbox-group" data-field="symptoms">
-        <label class="check-item" data-val="hotflash"><span class="check-box"></span>潮热</label>
-        <label class="check-item" data-val="headache"><span class="check-box"></span>头痛</label>
-        <label class="check-item" data-val="joint"><span class="check-box"></span>关节不适</label>
-        <label class="check-item" data-val="fatigue"><span class="check-box"></span>乏力</label>
-        <label class="check-item" data-val="bloating"><span class="check-box"></span>腹胀</label>
-        <label class="check-item" data-val="none"><span class="check-box"></span>无</label>
+        <label class="check-item" data-val="hotflash"><input type="checkbox" style="display:none"><span class="check-box"></span>潮热</label>
+        <label class="check-item" data-val="headache"><input type="checkbox" style="display:none"><span class="check-box"></span>头痛</label>
+        <label class="check-item" data-val="joint"><input type="checkbox" style="display:none"><span class="check-box"></span>关节不适</label>
+        <label class="check-item" data-val="fatigue"><input type="checkbox" style="display:none"><span class="check-box"></span>乏力</label>
+        <label class="check-item" data-val="bloating"><input type="checkbox" style="display:none"><span class="check-box"></span>腹胀</label>
+        <label class="check-item" data-val="none"><input type="checkbox" style="display:none"><span class="check-box"></span>无</label>
+        <label class="check-item" data-val="other_sym"><input type="checkbox" style="display:none"><span class="check-box"></span>其他<input type="text" class="check-other-input" id="symOtherInput" placeholder="请输入" style="display:none;margin-left:6px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:80px"></label>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">补剂/用药</label>
       <div class="checkbox-group" data-field="supplements">
-        <label class="check-item" data-val="calcium"><span class="check-box"></span>钙片</label>
-        <label class="check-item" data-val="vitd"><span class="check-box"></span>维生素D</label>
-        <label class="check-item" data-val="magnesium"><span class="check-box"></span>镁</label>
-        <label class="check-item" data-val="none"><span class="check-box"></span>无</label>
+        <label class="check-item" data-val="calcium"><input type="checkbox" style="display:none"><span class="check-box"></span>钙片</label>
+        <label class="check-item" data-val="vitd"><input type="checkbox" style="display:none"><span class="check-box"></span>维生素D</label>
+        <label class="check-item" data-val="magnesium"><input type="checkbox" style="display:none"><span class="check-box"></span>镁</label>
+        <label class="check-item" data-val="none"><input type="checkbox" style="display:none"><span class="check-box"></span>无</label>
+        <label class="check-item" data-val="other_sup"><input type="checkbox" style="display:none"><span class="check-box"></span>其他<input type="text" class="check-other-input" id="supOtherInput" placeholder="请输入" style="display:none;margin-left:6px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:80px"></label>
       </div>
     </div>
   </div>
@@ -569,6 +575,11 @@ function resetForm(){
   document.getElementById('f-postGlu').value='';
   document.getElementById('f-weight').value='';
   document.getElementById('f-bp').value='';
+  // 清空自定义输入框
+  const symOtherInput=document.getElementById('symOtherInput');
+  if(symOtherInput){symOtherInput.value='';symOtherInput.style.display='none';}
+  const supOtherInput=document.getElementById('supOtherInput');
+  if(supOtherInput){supOtherInput.value='';supOtherInput.style.display='none';}
   // 清空选择按钮
   document.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('selected'));
   document.querySelectorAll('.check-item').forEach(item=>{
@@ -615,6 +626,19 @@ function fillFormFromLog(log){
   if(log.choices&&log.choices.exercised==='yes'){
     document.getElementById('exerciseDetail').style.display='block';
   }
+  // 回填自定义文本
+  if(log.sym_other){
+    document.getElementById('symOtherInput').value=log.sym_other;
+    const symOtherItem=document.querySelector('.check-item[data-val="other_sym"]');
+    if(symOtherItem){symOtherItem.classList.add('checked');symOtherItem.querySelector('input').checked=true;}
+    document.getElementById('symOtherInput').style.display='inline-block';
+  }
+  if(log.sup_other){
+    document.getElementById('supOtherInput').value=log.sup_other;
+    const supOtherItem=document.querySelector('.check-item[data-val="other_sup"]');
+    if(supOtherItem){supOtherItem.classList.add('checked');supOtherItem.querySelector('input').checked=true;}
+    document.getElementById('supOtherInput').style.display='inline-block';
+  }
 }
 
 // Choice buttons
@@ -641,8 +665,10 @@ function bindCheckButtons(){
     if(!formData.checkFields[field])formData.checkFields[field]=[];
     g.querySelectorAll('.check-item').forEach(item=>{
       const inp=item.querySelector('input');
-      item.addEventListener('click',()=>{
+      item.addEventListener('click',(e)=>{
         const v=item.dataset.val;
+        // 阻止输入框的点击冒泡
+        if(e.target.tagName==='INPUT'&&e.target.type==='text')return;
         if(v==='none'){
           g.querySelectorAll('.check-item').forEach(x=>{x.classList.remove('checked');x.querySelector('input').checked=false});
           item.classList.add('checked');inp.checked=true;
@@ -657,6 +683,25 @@ function bindCheckButtons(){
             formData.checkFields[field].push(v);
           }else{
             formData.checkFields[field]=formData.checkFields[field].filter(x=>x!==v);
+          }
+        }
+        // 处理"其他"输入框显示/隐藏
+        if(field==='symptoms'){
+          const otherItem=g.querySelector('.check-item[data-val="other_sym"]');
+          const otherInput=document.getElementById('symOtherInput');
+          if(otherItem.classList.contains('checked')){
+            otherInput.style.display='inline-block';
+          }else{
+            otherInput.style.display='none';
+          }
+        }
+        if(field==='supplements'){
+          const otherItem=g.querySelector('.check-item[data-val="other_sup"]');
+          const otherInput=document.getElementById('supOtherInput');
+          if(otherItem.classList.contains('checked')){
+            otherInput.style.display='inline-block';
+          }else{
+            otherInput.style.display='none';
           }
         }
       });
@@ -783,7 +828,9 @@ function saveLog(){
     bp:document.getElementById('f-bp').value,
     quote:document.getElementById('f-quote').value,
     choices:{...formData.choiceFields},
-    checks:{...formData.checkFields}
+    checks:{...formData.checkFields},
+    sym_other:document.getElementById('symOtherInput')?document.getElementById('symOtherInput').value:'',
+    sup_other:document.getElementById('supOtherInput')?document.getElementById('supOtherInput').value:''
   };
   const logs=getLogs();
   const idx=logs.findIndex(l=>l.date===log.date);
@@ -900,18 +947,23 @@ function switchPage(name){
 // Home
 function refreshHome(){
   const logs=getLogs();
-  const today=logs.find(l=>l.date===todayKey());
-  if(today){
-    const sleep=calcSleepHours(today.sleepTime,today.wakeTime);
+  const today=todayKey();
+  // 显示今天日期
+  document.getElementById('homeDateLabel').textContent=formatDisplayDate(today);
+  const todayLog=logs.find(l=>l.date===today);
+  if(todayLog){
+    const sleep=calcSleepHours(todayLog.sleepTime,todayLog.wakeTime);
     document.getElementById('hm-sleep').textContent=sleep?sleep+'h':'--';
-    document.getElementById('hm-exercise').textContent=today.exDuration?today.exDuration+'min':'--';
+    document.getElementById('hm-exercise').textContent=todayLog.exDuration?todayLog.exDuration+'min':'--';
     const moodMap={good:'好',ok:'平',low:'低落',irritable:'烦躁'};
-    document.getElementById('hm-mood').textContent=today.choices.mood?moodMap[today.choices.mood]:'--';
+    document.getElementById('hm-mood').textContent=todayLog.choices.mood?moodMap[todayLog.choices.mood]:'--';
     const waterMap={'4':'<4','6':'5-6','8':'7-8','10':'8+'};
-    document.getElementById('hm-water').textContent=today.choices.water?waterMap[today.choices.water]+'杯':'--';
-    if(today.quote){
+    document.getElementById('hm-water').textContent=todayLog.choices.water?waterMap[todayLog.choices.water]+'杯':'--';
+    // 显示今日一句话，隐藏未打卡提示
+    document.getElementById('homeNoLog').style.display='none';
+    if(todayLog.quote){
       document.getElementById('homeTodayLog').style.display='block';
-      document.getElementById('homeQuote').textContent=today.quote;
+      document.getElementById('homeQuote').textContent=todayLog.quote;
     }else{
       document.getElementById('homeTodayLog').style.display='none';
     }
@@ -920,6 +972,8 @@ function refreshHome(){
     document.getElementById('hm-exercise').textContent='--';
     document.getElementById('hm-mood').textContent='--';
     document.getElementById('hm-water').textContent='--';
+    // 显示未打卡提示，隐藏今日一句话
+    document.getElementById('homeNoLog').style.display='block';
     document.getElementById('homeTodayLog').style.display='none';
   }
 }
