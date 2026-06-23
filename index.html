@@ -1182,7 +1182,7 @@ function renderWeekly(){
 }
 // 生成周报文字
 function generateWeeklyReport(){
-  const logs=loadLogs();
+  const logs=getLogs();
   if(logs.length===0)return '暂无打卡数据';
 
   // 最近7天
@@ -1310,7 +1310,7 @@ function fallbackCopy(text){
 
 // 导出数据
 function exportData(){
-  const logs=loadLogs();
+  const logs=getLogs();
   const data={
     version:'1.0',
     exportDate:new Date().toISOString().split('T')[0],
