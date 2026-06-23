@@ -413,26 +413,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">身体不适（可多选）</label>
-      <div class="checkbox-group" data-field="symptoms">
-        <label class="check-item" data-val="hotflash"><input type="checkbox" style="display:none"><span class="check-box"></span>潮热</label>
-        <label class="check-item" data-val="headache"><input type="checkbox" style="display:none"><span class="check-box"></span>头痛</label>
-        <label class="check-item" data-val="joint"><input type="checkbox" style="display:none"><span class="check-box"></span>关节不适</label>
-        <label class="check-item" data-val="fatigue"><input type="checkbox" style="display:none"><span class="check-box"></span>乏力</label>
-        <label class="check-item" data-val="bloating"><input type="checkbox" style="display:none"><span class="check-box"></span>腹胀</label>
-        <label class="check-item" data-val="none"><input type="checkbox" style="display:none"><span class="check-box"></span>无</label>
-        <label class="check-item" data-val="other_sym"><input type="checkbox" style="display:none"><span class="check-box"></span>其他<input type="text" class="check-other-input" id="symOtherInput" placeholder="请输入" style="display:none;margin-left:6px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:80px"></label>
-      </div>
+      <label class="form-label">身体不适</label>
+      <input class="form-input" type="text" id="f-symptoms" placeholder="可选，如：潮热、头痛">
     </div>
     <div class="form-group">
       <label class="form-label">补剂/用药</label>
-      <div class="checkbox-group" data-field="supplements">
-        <label class="check-item" data-val="calcium"><input type="checkbox" style="display:none"><span class="check-box"></span>钙片</label>
-        <label class="check-item" data-val="vitd"><input type="checkbox" style="display:none"><span class="check-box"></span>维生素D</label>
-        <label class="check-item" data-val="magnesium"><input type="checkbox" style="display:none"><span class="check-box"></span>镁</label>
-        <label class="check-item" data-val="none"><input type="checkbox" style="display:none"><span class="check-box"></span>无</label>
-        <label class="check-item" data-val="other_sup"><input type="checkbox" style="display:none"><span class="check-box"></span>其他<input type="text" class="check-other-input" id="supOtherInput" placeholder="请输入" style="display:none;margin-left:6px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:80px"></label>
-      </div>
+      <input class="form-input" type="text" id="f-supplements" placeholder="可选，如：钙片、维生素D">
     </div>
   </div>
 
@@ -566,6 +552,8 @@ function resetForm(){
   // 清空文本
   document.getElementById('f-allFood').value='';
   document.getElementById('f-quote').value='';
+  document.getElementById('f-symptoms').value='';
+  document.getElementById('f-supplements').value='';
   document.getElementById('f-sleepTime').value='';
   document.getElementById('f-wakeTime').value='';
   document.getElementById('f-exDuration').value='';
@@ -605,6 +593,9 @@ function fillFormFromLog(log){
   if(log.postGlu)document.getElementById('f-postGlu').value=log.postGlu;
   if(log.weight)document.getElementById('f-weight').value=log.weight;
   if(log.bp)document.getElementById('f-bp').value=log.bp;
+  // restore symptoms & supplements text (new format)
+  if(log.symptomsText)document.getElementById('f-symptoms').value=log.symptomsText;
+  if(log.supplementsText)document.getElementById('f-supplements').value=log.supplementsText;
   // restore choices
   if(log.choices){
     Object.entries(log.choices).forEach(([k,v])=>{
@@ -614,11 +605,25 @@ function fillFormFromLog(log){
   }
   if(log.checks){
     Object.entries(log.checks).forEach(([k,arr])=>{
-      arr.forEach(v=>{
-        const item=document.querySelector(`.checkbox-group[data-field="${k}"] .check-item[data-val="${v}"]`);
-        if(item){item.classList.add('checked');const chk=item.querySelector('input[type="checkbox"]');if(chk)chk.checked=true;}
-      });
-      formData.checkFields[k]=arr;
+      if(k==='symptoms'){
+        // 兼容旧数据：把数组转成文本填到输入框
+        if(!log.symptomsText&&arr.length>0&&!arr.includes('none')){
+          const symMap={hotflash:'潮热',headache:'头痛',joint:'关节不适',fatigue:'乏力',bloating:'腹胀',other_sym:'其他'};
+          document.getElementById('f-symptoms').value=arr.map(v=>symMap[v]||v).join('、');
+        }
+      }else if(k==='supplements'){
+        if(!log.supplementsText&&arr.length>0&&!arr.includes('none')){
+          const supMap={calcium:'钙片',vitd:'维生素D',magnesium:'镁',other_sup:'其他'};
+          document.getElementById('f-supplements').value=arr.map(v=>supMap[v]||v).join('、');
+        }
+      }else{
+        // 其他 checkbox 正常回填（如 exerciseTypes）
+        arr.forEach(v=>{
+          const item=document.querySelector(`.checkbox-group[data-field="${k}"] .check-item[data-val="${v}"]`);
+          if(item){item.classList.add('checked');const chk=item.querySelector('input[type="checkbox"]');if(chk)chk.checked=true;}
+        });
+        formData.checkFields[k]=arr;
+      }
     });
   }
   if(log.choices&&log.choices.exercised==='yes'){
@@ -827,8 +832,8 @@ function saveLog(){
     quote:document.getElementById('f-quote').value,
     choices:{...formData.choiceFields},
     checks:{...formData.checkFields},
-    sym_other:document.getElementById('symOtherInput')?document.getElementById('symOtherInput').value:'',
-    sup_other:document.getElementById('supOtherInput')?document.getElementById('supOtherInput').value:''
+    symptomsText:document.getElementById('f-symptoms').value,
+    supplementsText:document.getElementById('f-supplements').value
   };
   const logs=getLogs();
   const idx=logs.findIndex(l=>l.date===log.date);
@@ -1079,10 +1084,12 @@ function showDetail(date){
   if(log.postGlu)html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">餐后2h血糖：${log.postGlu} mmol/L</div>`;
   if(log.weight)html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">体重：${log.weight} kg</div>`;
   if(log.bp)html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">血压：${log.bp} mmHg</div>`;
-  const symps=(log.checks.symptoms||[]).map(s=>symMap[s]).filter(Boolean).join('、');
-  if(symps&&symps!=='无')html+=`<div style="font-size:13px;color:var(--coral);margin-bottom:4px">不适：${symps}</div>`;
-  const supps=(log.checks.supplements||[]).map(s=>suppMap[s]).filter(Boolean).join('、');
-  if(supps)html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">补剂：${supps}</div>`;
+  // 身体不适（新格式文本，兼容旧格式数组）
+  const symText=log.symptomsText || (log.checks&&log.checks.symptoms?log.checks.symptoms.filter(v=>v!=='none').map(v=>({hotflash:'潮热',headache:'头痛',joint:'关节不适',fatigue:'乏力',bloating:'腹胀'})[v]||v).join('、'):'');
+  if(symText)html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">身体不适：${symText}</div>`;
+  // 补剂/用药（新格式文本，兼容旧格式数组）
+  const supText=log.supplementsText || (log.checks&&log.checks.supplements?log.checks.supplements.filter(v=>v!=='none').map(v=>({calcium:'钙片',vitd:'维生素D',magnesium:'镁'})[v]||v).join('、'):'');
+  if(supText)html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:4px">补剂/用药：${supText}</div>`;
   html+=`<div class="section-divider"></div>`;
 
   if(log.quote)html+=`<div style="font-size:14px;font-style:italic;color:var(--text2);padding:8px 0">"${log.quote}"</div>`;
@@ -1193,7 +1200,11 @@ function renderWeekly(){
 
   // 围绝经期症状
   const hotFlashDays=daysWithData.filter(d=>d.log.choices.hotFlash&&d.log.choices.hotFlash!=='none').length;
-  const symptomDays=daysWithData.filter(d=>d.log.checks.symptoms&&d.log.checks.symptoms.length>0&&!(d.log.checks.symptoms.length===1&&d.log.checks.symptoms[0]==='none')).length;
+  const symptomDays=daysWithData.filter(d=>{
+    const hasSym=(d.log.symptomsText&&d.log.symptomsText.trim()!=='') ||
+      (d.log.checks&&d.log.checks.symptoms&&d.log.checks.symptoms.length>0&&!(d.log.checks.symptoms.length===1&&d.log.checks.symptoms[0]==='none'));
+    return hasSym;
+  }).length;
   if(hotFlashDays>0||symptomDays>0){
     html+=`<div class="card-title" style="font-size:14px;margin-top:8px">&#129505; 围绝经期症状</div>`;
     if(hotFlashDays>0)html+=`<div style="font-size:13px;color:var(--text2);margin-bottom:4px">潮热/盗汗：${hotFlashDays}天</div>`;
@@ -1239,6 +1250,8 @@ function renderWeekly(){
 function generateWeeklyReport(){
   const logs=getLogs();
   if(logs.length===0)return '暂无打卡数据';
+  const symMap={hotflash:'潮热',headache:'头痛',joint:'关节不适',fatigue:'乏力',bloating:'腹胀'};
+  const supMap={calcium:'钙片',vitd:'维生素D',magnesium:'镁'};
 
   // 最近7天
   const today=new Date();
@@ -1304,6 +1317,12 @@ function generateWeeklyReport(){
     if(d.fastingGlu)report+=`空腹血糖：${d.fastingGlu} mmol/L\n`;
     if(d.postGlu)report+=`餐后2h血糖：${d.postGlu} mmol/L\n`;
     if(d.weight)report+=`体重：${d.weight} kg\n`;
+    // 身体不适（新格式文本，兼容旧格式数组）
+    const dSym=d.symptomsText || (d.checks&&d.checks.symptoms?d.checks.symptoms.filter(v=>v!=='none').map(v=>symMap[v]||v).join('、'):'');
+    if(dSym)report+=`身体不适：${dSym}\n`;
+    // 补剂/用药（新格式文本，兼容旧格式数组）
+    const dSup=d.supplementsText || (d.checks&&d.checks.supplements?d.checks.supplements.filter(v=>v!=='none').map(v=>supMap[v]||v).join('、'):'');
+    if(dSup)report+=`补剂/用药：${dSup}\n`;
 
     // 一句话
     if(d.quote)report+=`备注：${d.quote}\n`;
